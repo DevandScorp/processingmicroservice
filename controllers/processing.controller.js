@@ -13,13 +13,14 @@ class ProcessingController {
    */
   async predict(ctx) {
     const {
-      date_from, date_to, apps, links,
+      date_from, date_to, apps, links, model_name, python,
     } = ctx.request.body;
     if (!apps || !apps.length) throw 'Список приложений не был передан';
     if (!links || !apps.length) throw 'Список ссылок не был передан';
     if (!date_from || !date_to) throw 'Не были переданы дата с или дата по';
+    if (!model_name) throw 'Имя модели не может быть пустым';
     const result = await AppMonitoringService.predict({
-      date_from, date_to, apps, links,
+      date_from, date_to, apps, links, model_name, python,
     });
     return ctx.body = { predictions: result };
   }
@@ -30,7 +31,13 @@ class ProcessingController {
    * @returns {Promise<object>}
    */
   async trainModel(ctx) {
-    await AppMonitoringService.trainModel();
+    const {
+      model_name, apps, links, python,
+    } = ctx.request.body;
+    if (!apps || !apps.length) throw 'Список приложений не был передан';
+    if (!links || !apps.length) throw 'Список ссылок не был передан';
+    if (!model_name) throw 'Имя модели не может быть пустым';
+    await AppMonitoringService.trainModel({ model_name, apps, links, python });
     return ctx.body = { message: 'OK' };
   }
 

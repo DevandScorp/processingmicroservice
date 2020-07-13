@@ -1,3 +1,4 @@
+/* eslint-disable no-empty */
 /* eslint-disable object-curly-newline */
 // @ts-nocheck
 /* eslint-disable no-throw-literal */
@@ -56,8 +57,9 @@ class AppMonitoringService {
    * @param {string} params.date_to - дата по (с указанием времени вплоть до мин
    * @param {string[]} params.apps - массив с названиями приложений
    * @param {string[]} params.links - массив с ссылками
+   * @param {string} params.model_name - наименование модели
    */
-  async predict({ date_from, date_to, apps, links }) {
+  async predict({ date_from, date_to, apps, links, model_name, python }) {
     const dateFromMoment = moment(date_from, 'YYYY-MM-DD HH:mm:ss');
     const dateToMoment = moment(date_to, 'YYYY-MM-DD HH:mm:ss');
     if (!dateFromMoment.isValid() || !dateToMoment.isValid()) throw 'Были переданы некорректные даты';
@@ -80,7 +82,12 @@ class AppMonitoringService {
       predictionElement[appIndex + linkIndex + 1] = dataset[key].keyboardActivityCounter || 0;
       predictions.push(predictionElement);
     }
-    const result = await execFileAsync('./decisionSearchTree/dist/predict.exe', [JSON.stringify(predictions)]);
+    let result;
+    if (python) {
+      result = await execAsync(`python ./decisionSearchTree/predict.py ${JSON.stringify(predictions)} ${model_name}`);
+    } else {
+      result = await execFileAsync('./decisionSearchTree/dist/predict.exe', [`${JSON.stringify(predictions)}`, model_name]);
+    }
     return JSON.parse(result.trim());
   }
 
@@ -206,7 +213,7 @@ class AppMonitoringService {
       crlfDelay: Infinity,
     });
     /**
-     * Set для того, чтобы не было с
+     * Set для того, чтобы не было множества вкладок за одну секунду
      */
     const browserTabsUniqueDateSet = new Set();
     for await (const line of browserTabsActivityReadLines) {
@@ -234,9 +241,18 @@ class AppMonitoringService {
 
   /**
    * Тренировка и сохранение модели
+   * @param {object} params - объект запроса
+   * @param {string} params.model_name - наименование модели
+   * @param {string[]} params.apps - массив с названиями приложений
+   * @param {string[]} params.links - массив с ссылками
+   * @param {boolean} params.python - идентификатор использования питоновского скрипта
    */
-  async trainModel() {
-    await execFileAsync('./decisionSearchTree/dist/train.exe');
+  async trainModel({ model_name, apps, links, python }) {
+    if (python) {
+      await execAsync(`python ./decisionSearchTree/train.py ${model_name}`);
+    } else {
+      await execFileAsync('./decisionSearchTree/dist/train.exe', [model_name]);
+    }
   }
 
   /**
@@ -298,9 +314,7 @@ class AppMonitoringService {
             this.apps = [];
           }
         }
-      } catch (err) {
-        console.log(err);
-      }
+      } catch (err) {}
     }, 1000);
   }
 

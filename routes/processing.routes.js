@@ -58,6 +58,10 @@ router.post('/dataset', ProcessingController.generateDataset);
  * @name Тренировка и сохранение модели
  * @memberof! ProcessingRoutes
  * @path {POST} /api/processing/train
+ * @body {string} model_name - наименование модели
+ * @body {string[]} apps - массив приложений, которые необходимо учитывать при сборе данных
+ * @body {string[]} links - массив ссылок, которые необходимо учитывать при сборе данных
+ * @body {boolean} python - использовать скрипт на питоне или готовый exe
  * @code {200} Успешно
  * @code {500} Ошибка сервера
  */
@@ -66,10 +70,12 @@ router.post('/train', ProcessingController.trainModel);
  * @name Определение flow state на основе имеющихся данных
  * @memberof! ProcessingRoutes
  * @path {POST} /api/processing/predict
+ * @body {string} model_name - наименование модели
  * @body {string} date_from - дата с (с указанием времени вплоть до минут)
  * @body {string} date_to - дата по (с указанием времени вплоть до минут)
  * @body {string[]} apps - массив приложений, которые необходимо учитывать при сборе данных
  * @body {string[]} links - массив ссылок, которые необходимо учитывать при сборе данных
+ * @body {boolean} python - использовать скрипт на питоне или готовый exe
  * @code {200} Успешно
  * @code {500} Ошибка сервера
  */
