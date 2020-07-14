@@ -121,7 +121,7 @@ class AppMonitoringService {
         first_name: user.first_name || '',
         last_name: user.last_name || '',
         username: user.username || '',
-        image_url: image_url || 'https://capenetworks.com/static/images/testimonials/user-icon.svg',
+        image_url: image_url || 'https://test.developmentandscorp.tech/user.svg',
       };
     });
     chats = chats.map(async (chat) => {
