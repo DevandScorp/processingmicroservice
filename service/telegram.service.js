@@ -139,7 +139,7 @@ class AppMonitoringService {
         access_hash: chat.access_hash,
         username: chat.username || '',
         title: chat.title || '',
-        image_url: image_url || 'https://capenetworks.com/static/images/testimonials/user-icon.svg',
+        image_url: image_url || '',
       };
     });
     users = await Promise.all(users);
