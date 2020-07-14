@@ -40,6 +40,8 @@ router.post('/start', ProcessingController.startProcessing);
  * @memberof! ProcessingRoutes
  * @path {POST} /api/processing/start
  * @body {boolean} train - идентификатор тренировки модели
+ * @body {string[]} apps - массив приложений, которые необходимо учитывать при сборе данных
+ * @body {string[]} links - массив ссылок, которые необходимо учитывать при сборе данных
  * @code {200} Успешно
  * @code {500} Ошибка сервера
  */

@@ -4,6 +4,7 @@
 /* eslint-disable no-return-assign */
 // @ts-nocheck
 const AppMonitoringService = require('../service/appmonitoring.service');
+const processingUtils = require('../utils/processing.utils');
 /** Класс работы с процессом обработки данных */
 class ProcessingController {
   /**
@@ -84,9 +85,12 @@ class ProcessingController {
    * @returns {Promise<object>}
    */
   async generateJson(ctx) {
-    const { train } = ctx.request.body;
+    const { train, apps, links } = ctx.request.body;
     if (train === undefined) throw 'Не был передан идентификатор тренировки модели';
-    const result = await AppMonitoringService.generateJson({ train });
+    if (!apps || !apps.length) throw 'Список приложений не был передан';
+    if (!links || !apps.length) throw 'Список ссылок не был передан';
+    const json = await AppMonitoringService.generateJson({ train });
+    const result = await processingUtils.editJson({ json, apps, links });
     return ctx.body = result;
   }
 
