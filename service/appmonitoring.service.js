@@ -15,8 +15,10 @@ const fs = require('fs');
 const { spawn } = require('child_process');
 const moment = require('moment');
 const readline = require('readline');
+const requestPromise = require('request-promise');
 const ObjectsToCsv = require('objects-to-csv');
 const { execAsync, execFileAsync, existsAsync } = require('../utils/processing.utils');
+const phoneStatusEnum = require('../enums/phoneStatus.enum');
 /**
  * Сервис для работы со скриптом, получающим текущее используемое приложение и текущую ссылку при использовании браузера
  */
@@ -58,13 +60,14 @@ class AppMonitoringService {
    * @param {string[]} params.apps - массив с названиями приложений
    * @param {string[]} params.links - массив с ссылками
    * @param {string} params.model_name - наименование модели
+   * @param {string} params.use_mobile - идентификатор использования мобильного телефона в анализе
    */
-  async predict({ date_from, date_to, apps, links, model_name, python }) {
+  async predict({ date_from, date_to, apps, links, model_name, python, use_mobile }) {
     const dateFromMoment = moment(date_from, 'YYYY-MM-DD HH:mm:ss');
     const dateToMoment = moment(date_to, 'YYYY-MM-DD HH:mm:ss');
     if (!dateFromMoment.isValid() || !dateToMoment.isValid()) throw 'Были переданы некорректные даты';
     if (dateFromMoment.isAfter(dateToMoment)) throw 'Дата с идет позже, чем дата по';
-    const dataset = await this.generateJson({ train: false, date_from, date_to });
+    const dataset = await this.generateJson({ train: false, date_from, date_to, use_mobile });
     const predictions = [];
     for (const key of Object.keys(dataset)) {
       const predictionElement = [];
@@ -80,6 +83,8 @@ class AppMonitoringService {
       }
       predictionElement[appIndex + linkIndex] = dataset[key].mouseActivityCounter || 0;
       predictionElement[appIndex + linkIndex + 1] = dataset[key].keyboardActivityCounter || 0;
+      predictionElement[appIndex + linkIndex + 2] = dataset[key].active_phone || 0;
+      predictionElement[appIndex + linkIndex + 3] = dataset[key].inactive_phone || 0;
       predictions.push(predictionElement);
     }
     let result;
@@ -113,6 +118,8 @@ class AppMonitoringService {
       }
       csvElement.mouse = dataset[key].mouseActivityCounter || 0;
       csvElement.keyboard = dataset[key].keyboardActivityCounter || 0;
+      csvElement.active_phone = dataset[key].active_phone || 0;
+      csvElement.inactive_phone = dataset[key].inactive_phone || 0;
       const [timeGapElement] = this.statusTimeList.filter((elem) => moment(key, 'YYYY-MM-DD HH:mm:ss').isSameOrAfter(
         moment(elem.date_start, 'YYYY-MM-DD HH:mm:ss'),
       )
@@ -131,10 +138,11 @@ class AppMonitoringService {
    * Генерация json'a для датасета
    * @param {Object} params - объект с параметрами запроса
    * @param {boolean} params.train - идентификатор тренировки
-   * @param {object} params.date_from - дата с для фильтрации по дате для использования модели
+   * @param {st} params.date_from - дата с для фильтрации по дате для использования модели
    * @param {object} params.date_to - дата по для фильтрации по дате для использования модели
+   * @param {boolean} params.use_mobile - идентификатор использования мобильного телефона в анализе
    */
-  async generateJson({ train, date_from = null, date_to = null }) {
+  async generateJson({ train, date_from = null, date_to = null, use_mobile = false }) {
     const applicationActivityStream = fs.createReadStream(
       `./files/${train ? 'train' : 'predict'}/results-active-program.txt`,
     );
@@ -229,6 +237,20 @@ class AppMonitoringService {
       if (!applicationActivityResult[date].tabs) applicationActivityResult[date].tabs = {};
       if (applicationActivityResult[date].tabs[tab] === undefined) applicationActivityResult[date].tabs[tab] = 0;
       applicationActivityResult[date].tabs[tab]++;
+    }
+    if (use_mobile) {
+      const statistics = await requestPromise('http://192.241.152.146:3001/api/apps/phone', { json: true });
+      for (const item of statistics) {
+        const date = moment(+item.date).format('YYYY-MM-DD HH:mm:ss').replace(/[0-9]$/, '0');
+        if (!applicationActivityResult[date]) continue;
+        if (item.status === phoneStatusEnum.ACTIVE) {
+          if (!applicationActivityResult[date].active_phone) applicationActivityResult[date].active_phone = 0;
+          applicationActivityResult[date].active_phone++;
+        } else {
+          if (!applicationActivityResult[date].inactive_phone) applicationActivityResult[date].inactive_phone = 0;
+          applicationActivityResult[date].inactive_phone++;
+        }
+      }
     }
     if (train) {
       await fs.promises.writeFile(

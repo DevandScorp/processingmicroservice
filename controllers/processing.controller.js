@@ -14,14 +14,15 @@ class ProcessingController {
    */
   async predict(ctx) {
     const {
-      date_from, date_to, apps, links, model_name, python,
+      date_from, date_to, apps, links, model_name, python, use_mobile
     } = ctx.request.body;
     if (!apps || !apps.length) throw 'Список приложений не был передан';
     if (!links || !apps.length) throw 'Список ссылок не был передан';
     if (!date_from || !date_to) throw 'Не были переданы дата с или дата по';
     if (!model_name) throw 'Имя модели не может быть пустым';
+    if (use_mobile === undefined) throw 'Не был передан идентификатор использования мобильного телефона в анализе';
     const result = await AppMonitoringService.predict({
-      date_from, date_to, apps, links, model_name, python,
+      date_from, date_to, apps, links, model_name, python, use_mobile,
     });
     return ctx.body = { predictions: result };
   }
@@ -38,7 +39,9 @@ class ProcessingController {
     if (!apps || !apps.length) throw 'Список приложений не был передан';
     if (!links || !apps.length) throw 'Список ссылок не был передан';
     if (!model_name) throw 'Имя модели не может быть пустым';
-    await AppMonitoringService.trainModel({ model_name, apps, links, python });
+    await AppMonitoringService.trainModel({
+      model_name, apps, links, python,
+    });
     return ctx.body = { message: 'OK' };
   }
 
@@ -85,11 +88,14 @@ class ProcessingController {
    * @returns {Promise<object>}
    */
   async generateJson(ctx) {
-    const { train, apps, links } = ctx.request.body;
+    const {
+      train, apps, links, use_mobile,
+    } = ctx.request.body;
     if (train === undefined) throw 'Не был передан идентификатор тренировки модели';
+    if (use_mobile === undefined) throw 'Не был передан идентификатор использования мобильного телефона в анализе';
     if (!apps || !apps.length) throw 'Список приложений не был передан';
     if (!links || !apps.length) throw 'Список ссылок не был передан';
-    const json = await AppMonitoringService.generateJson({ train });
+    const json = await AppMonitoringService.generateJson({ train, use_mobile });
     const result = train ? await processingUtils.editJson({ json, apps, links }) : json;
     return ctx.body = result;
   }

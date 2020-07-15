@@ -39,6 +39,7 @@ router.post('/start', ProcessingController.startProcessing);
  * @name Генерация json'a для датасета
  * @memberof! ProcessingRoutes
  * @path {POST} /api/processing/start
+ * @body {boolean} use_mobile - идентификатор использования мобильного телефона в анализе
  * @body {boolean} train - идентификатор тренировки модели
  * @body {string[]} apps - массив приложений, которые необходимо учитывать при сборе данных
  * @body {string[]} links - массив ссылок, которые необходимо учитывать при сборе данных
@@ -72,6 +73,7 @@ router.post('/train', ProcessingController.trainModel);
  * @name Определение flow state на основе имеющихся данных
  * @memberof! ProcessingRoutes
  * @path {POST} /api/processing/predict
+ * @body {boolean} use_mobile - идентификатор использования мобильного телефона в анализе
  * @body {string} model_name - наименование модели
  * @body {string} date_from - дата с (с указанием времени вплоть до минут)
  * @body {string} date_to - дата по (с указанием времени вплоть до минут)
