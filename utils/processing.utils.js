@@ -13,8 +13,9 @@ const requestPromise = require('request-promise');
  * @param {boolean} params.json - изначальный объект для форматирования
  */
 exports.editJson = async ({ json, apps, links }) => {
-  const appsInfo = await requestPromise('https://test.developmentandscorp.tech/api/apps', { json: true });
+  const appsInfo = await requestPromise('http://192.241.152.146:3001/api/apps', { json: true });
   const result = {
+    max_time: 0,
     apps: [],
     links: [],
   };
@@ -25,7 +26,9 @@ exports.editJson = async ({ json, apps, links }) => {
     for (const key of Object.keys(json)) {
       if (json[key].apps && json[key].apps[app]) ++periodCounter;
     }
-    appObject.minutes_spent = Math.floor(periodCounter / 6);
+    const minutes_spent = Math.floor(periodCounter / 6);
+    appObject.minutes_spent = minutes_spent;
+    if (minutes_spent > result.max_time) result.max_time = minutes_spent;
     const [appInfo] = appsInfo.apps.filter((elem) => elem.process_name === app);
     if (appInfo) {
       appObject.image_link = appInfo.image_link;
@@ -43,7 +46,9 @@ exports.editJson = async ({ json, apps, links }) => {
     if (appInfo) {
       linkObject.image_link = appInfo.image_link;
     }
-    linkObject.minutes_spent = Math.floor(periodCounter / 6);
+    const minutes_spent = Math.floor(periodCounter / 6);
+    linkObject.minutes_spent = minutes_spent;
+    if (minutes_spent > result.max_time) result.max_time = minutes_spent;
     result.links.push(linkObject);
   }
   return result;
