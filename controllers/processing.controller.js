@@ -90,7 +90,7 @@ class ProcessingController {
     if (!apps || !apps.length) throw 'Список приложений не был передан';
     if (!links || !apps.length) throw 'Список ссылок не был передан';
     const json = await AppMonitoringService.generateJson({ train });
-    const result = await processingUtils.editJson({ json, apps, links });
+    const result = train ? await processingUtils.editJson({ json, apps, links }) : json;
     return ctx.body = result;
   }
 
